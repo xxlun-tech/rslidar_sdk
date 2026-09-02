@@ -94,12 +94,8 @@ message(=============================================================)
 # Dependencies Setup
 #========================
 
-find_package(roscpp 1.12 QUIET)
-
-#ROS2#
 find_package(rclcpp QUIET)
 
-add_definitions(-DROS2_FOUND)
 include_directories(${rclcpp_INCLUDE_DIRS})
 set(CMAKE_CXX_STANDARD 14)
 
