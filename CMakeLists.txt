@@ -3,9 +3,9 @@ cmake_policy(SET CMP0048 NEW)
 project(rslidar_sdk)
 
 #=======================================
-# Custom Point Type (XYZI,XYZIRT, XYZIF, XYZIRTF)
+# Custom Point Type (XYZI,XYZIRT, XYZIF, XYZIRTF, XYZIRCAEDT)
 #=======================================
-set(POINT_TYPE XYZI)
+set(POINT_TYPE XYZIRCAEDT)
 
 option(ENABLE_TRANSFORM "Enable transform functions" OFF)
 if(${ENABLE_TRANSFORM})
@@ -82,6 +82,8 @@ elseif(${POINT_TYPE} STREQUAL "XYZIF")
   add_definitions(-DPOINT_TYPE_XYZIF)
 elseif(${POINT_TYPE} STREQUAL "XYZIRTF")
   add_definitions(-DPOINT_TYPE_XYZIRTF)
+elseif(${POINT_TYPE} STREQUAL "XYZIRCAEDT")
+  add_definitions(-DPOINT_TYPE_XYZIRCAEDT)
 endif()
 
 message(=============================================================)
@@ -92,62 +94,19 @@ message(=============================================================)
 # Dependencies Setup
 #========================
 
-#ROS#
 find_package(roscpp 1.12 QUIET)
-
-if(roscpp_FOUND)
-
-  message(=============================================================)
-  message("-- ROS Found. ROS Support is turned On.")
-  message(=============================================================)
-
-  add_definitions(-DROS_FOUND)
-
-  find_package(roslib QUIET)
-  include_directories(${roscpp_INCLUDE_DIRS} ${roslib_INCLUDE_DIRS})
-  set(ROS_LIBS ${roscpp_LIBRARIES} ${roslib_LIBRARIES})
-
-  add_definitions(-DRUN_IN_ROS_WORKSPACE)
-
-  find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    sensor_msgs
-    roslib)
-
-  catkin_package(CATKIN_DEPENDS 
-    sensor_msgs 
-    roslib)
-
-else(roscpp_FOUND)
-
-  message(=============================================================)
-  message("-- ROS Not Found. ROS Support is turned Off.")
-  message(=============================================================)
-
-endif(roscpp_FOUND)
 
 #ROS2#
 find_package(rclcpp QUIET)
 
-if(rclcpp_FOUND)
-  message(=============================================================)
-  message("-- ROS2 Found. ROS2 Support is turned On.")
-  message(=============================================================)
+add_definitions(-DROS2_FOUND)
+include_directories(${rclcpp_INCLUDE_DIRS})
+set(CMAKE_CXX_STANDARD 14)
 
-  add_definitions(-DROS2_FOUND)
-  include_directories(${rclcpp_INCLUDE_DIRS})
-  set(CMAKE_CXX_STANDARD 14)
-
-  find_package(ament_cmake REQUIRED)
-  find_package(sensor_msgs REQUIRED)
-  find_package(rslidar_msg REQUIRED)
-  find_package(std_msgs REQUIRED)                      
-
-else(rclcpp_FOUND)
-  message(=============================================================)
-  message("-- ROS2 Not Found. ROS2 Support is turned Off.")
-  message(=============================================================)
-endif(rclcpp_FOUND)
+find_package(ament_cmake REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rslidar_msg REQUIRED)
+find_package(std_msgs REQUIRED)
 
 #Others#
 find_package(yaml-cpp REQUIRED)
@@ -168,42 +127,23 @@ add_executable(rslidar_sdk_node
                node/rslidar_sdk_node.cpp
                src/manager/node_manager.cpp)
 
-target_link_libraries(rslidar_sdk_node                   
+target_link_libraries(rslidar_sdk_node
                       ${YAML_CPP_LIBRARIES}
                       ${rs_driver_LIBRARIES})
 
-#Ros#
-if(roscpp_FOUND)
+ament_target_dependencies(rslidar_sdk_node
+  rclcpp
+  std_msgs
+  sensor_msgs
+  rslidar_msg)
 
-  target_link_libraries(rslidar_sdk_node 
-    ${ROS_LIBS})
+install(TARGETS
+  rslidar_sdk_node
+  DESTINATION lib/${PROJECT_NAME})
 
-  install(TARGETS rslidar_sdk_node
-          RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-          LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-          ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(DIRECTORY
+  launch
+  rviz
+  DESTINATION share/${PROJECT_NAME})
 
-endif(roscpp_FOUND)
-
-#Ros2#
-if(rclcpp_FOUND)
-
-  ament_target_dependencies(rslidar_sdk_node 
-    rclcpp 
-    std_msgs 
-    sensor_msgs 
-    rslidar_msg)
-
-  install(TARGETS
-    rslidar_sdk_node
-    DESTINATION lib/${PROJECT_NAME})
-
-  install(DIRECTORY
-    launch
-    rviz
-    DESTINATION share/${PROJECT_NAME})
-
-  ament_package()
-
-endif(rclcpp_FOUND)
-
+ament_package()

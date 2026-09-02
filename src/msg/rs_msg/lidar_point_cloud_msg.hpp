@@ -42,8 +42,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     typedef PointCloudT<PointXYZIRT> LidarPointCloudMsg;
 #elif defined(POINT_TYPE_XYZIRTF)
     typedef PointCloudT<PointXYZIRTF> LidarPointCloudMsg;
+#elif defined(POINT_TYPE_XYZIRCAEDT)
+    typedef PointCloudT<PointXYZIRCAEDT> LidarPointCloudMsg;
 #endif
-
 
 #ifdef ENABLE_IMU_DATA_PARSE
 #include "rs_driver/msg/imu_data_msg.hpp"
