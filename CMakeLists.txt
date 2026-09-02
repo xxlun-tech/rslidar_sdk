@@ -61,14 +61,12 @@ endif(${ENABLE_IMU_DATA_PARSE})
 #========================
 set(PROJECT_NAME rslidar_sdk)
 
-add_definitions(-DPROJECT_PATH="${PROJECT_SOURCE_DIR}")
-
-if (CMAKE_BUILD_TYPE STREQUAL "")
-  set(CMAKE_BUILD_TYPE Release)
-  add_definitions(-O3)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-add_definitions(-std=c++17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall)
 
 #========================
@@ -94,52 +92,50 @@ message(=============================================================)
 # Dependencies Setup
 #========================
 
-find_package(rclcpp QUIET)
-
-include_directories(${rclcpp_INCLUDE_DIRS})
-set(CMAKE_CXX_STANDARD 14)
-
-find_package(ament_cmake REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(rslidar_msg REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
 #Others#
 find_package(yaml-cpp REQUIRED)
 
-#Include directory#
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
 #Driver core#
 add_subdirectory(src/rs_driver)
 find_package(rs_driver REQUIRED)
-include_directories(${rs_driver_INCLUDE_DIRS})
 
 #========================
 # Build Setup
 #========================
 
-add_executable(rslidar_sdk_node
-               node/rslidar_sdk_node.cpp
-               src/manager/node_manager.cpp)
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/node/rslidar_sdk_component.cpp
+  src/manager/node_manager.cpp
+)
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/src
+    ${rs_driver_INCLUDE_DIRS}
+)
+target_link_libraries(${PROJECT_NAME}
+  ${YAML_CPP_LIBRARIES}
+  ${rs_driver_LIBRARIES}
+)
 
-target_link_libraries(rslidar_sdk_node
-                      ${YAML_CPP_LIBRARIES}
-                      ${rs_driver_LIBRARIES})
-
-ament_target_dependencies(rslidar_sdk_node
+ament_target_dependencies(${PROJECT_NAME}
   rclcpp
+  rclcpp_components
   std_msgs
   sensor_msgs
-  rslidar_msg)
+  rslidar_msg
+  ament_index_cpp
+)
 
-install(TARGETS
-  rslidar_sdk_node
-  DESTINATION lib/${PROJECT_NAME})
+rclcpp_components_register_node(${PROJECT_NAME}
+  PLUGIN "robosense::lidar::RslidarSdkComponent"
+  EXECUTABLE ${PROJECT_NAME}_node
+)
 
-install(DIRECTORY
+ament_auto_package(
+  INSTALL_TO_SHARE
+  config
   launch
-  rviz
-  DESTINATION share/${PROJECT_NAME})
-
-ament_package()
+)
